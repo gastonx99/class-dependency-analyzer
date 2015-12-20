@@ -56,7 +56,11 @@ public class ClassDefinition {
     }
 
     public String getSimpleClassname() {
-        return classname.substring(classname.lastIndexOf(".") + 1);
+        String s = classname.substring(classname.lastIndexOf(".") + 1);
+        if (s.contains("$")) {
+            s = s.substring(s.lastIndexOf("$") + 1);
+        }
+        return s;
     }
 
     public void setSuperClassname(String name) {

@@ -3,24 +3,24 @@ package se.dandel.tools.classdepanalyzer;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DependencyClassTreeNode {
+public class ClassTreeNode {
 
     private ClassDefinition classDefinition;
 
-    private Set<DependencyClassTreeNode> children = new HashSet<>();
-    private DependencyClassTreeNode parent;
+    private Set<ClassTreeNode> children = new HashSet<>();
+    private ClassTreeNode parent;
 
-    public DependencyClassTreeNode(DependencyClassTreeNode parent, ClassDefinition classDefinition) {
+    public ClassTreeNode(ClassTreeNode parent, ClassDefinition classDefinition) {
         this.parent = parent;
         this.classDefinition = classDefinition;
     }
 
-    public void add(DependencyClassTreeNode child) {
+    public void add(ClassTreeNode child) {
         children.add(child);
     }
 
     public boolean isCyclic() {
-        DependencyClassTreeNode t = parent;
+        ClassTreeNode t = parent;
         while (t != null) {
             if (t.getDefinition().getClassname().equals(this.getDefinition().getClassname())) {
                 return true;
@@ -30,7 +30,7 @@ public class DependencyClassTreeNode {
         return false;
     }
 
-    public Set<DependencyClassTreeNode> getChildren() {
+    public Set<ClassTreeNode> getChildren() {
         return children;
     }
 

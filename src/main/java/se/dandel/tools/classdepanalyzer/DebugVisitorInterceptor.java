@@ -6,7 +6,7 @@ import java.lang.reflect.Parameter;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 
-public class DebugDependencyVisitorInterceptor implements MethodInterceptor {
+public class DebugVisitorInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {

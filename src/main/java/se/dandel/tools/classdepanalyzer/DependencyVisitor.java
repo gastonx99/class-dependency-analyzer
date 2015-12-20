@@ -17,30 +17,27 @@ import org.objectweb.asm.TypePath;
 import org.objectweb.asm.signature.SignatureReader;
 import org.objectweb.asm.signature.SignatureVisitor;
 
-/**
- * DependencyVisitor
- * 
- * @author Eugene Kuleshov
- */
 public class DependencyVisitor extends ClassVisitor {
 
-    @Inject
-    private MyAnnotationDependencyVisitor annotationDependencyVisitor;
+    private static final int OPCODE_ASM5 = Opcodes.ASM5;
 
     @Inject
-    private MyFieldDependencyVisitor fieldDependencyVisitor;
+    private InternalAnnotationVisitor annotationVisitor;
 
     @Inject
-    private MyMethodDependencyVisitor methodDependencyVisitor;
+    private InternalFieldVisitor fieldVisitor;
 
     @Inject
-    private MyFieldSignatureDependencyVisitor fieldSignatureDependencyVisitor;
+    private InternalMethodVisitor methodVisitor;
 
     @Inject
-    private MyMethodSignatureDependencyVisitor methodSignatureDependencyVisitor;
+    private InternalFieldSignatureVisitor fieldSignatureVisitor;
+
+    @Inject
+    private InternalMethodSignatureVisitor methodSignatureVisitor;
 
     public DependencyVisitor() {
-        super(Opcodes.ASM5);
+        super(OPCODE_ASM5);
     }
 
     // ClassVisitor
@@ -57,13 +54,13 @@ public class DependencyVisitor extends ClassVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(final String desc, final boolean visible) {
         ClassDefinition.current().addClassAnnotations(getSimpleType(desc));
-        return annotationDependencyVisitor;
+        return annotationVisitor;
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(final int typeRef, final TypePath typePath, final String desc,
             final boolean visible) {
-        return annotationDependencyVisitor;
+        return annotationVisitor;
     }
 
     @Override
@@ -71,9 +68,9 @@ public class DependencyVisitor extends ClassVisitor {
             final Object value) {
         ClassDefinition.current().addMember(getSimpleType(desc));
         if (signature != null) {
-            new SignatureReader(signature).acceptType(fieldSignatureDependencyVisitor);
+            new SignatureReader(signature).acceptType(fieldSignatureVisitor);
         }
-        return fieldDependencyVisitor;
+        return fieldVisitor;
     }
 
     @Override
@@ -83,14 +80,14 @@ public class DependencyVisitor extends ClassVisitor {
             ClassDefinition.current().addMethodReturnTypes(getReturnType(desc));
             ClassDefinition.current().addMethodParameters(getTypes(Type.getArgumentTypes(desc)));
         } else {
-            new SignatureReader(signature).accept(methodSignatureDependencyVisitor);
+            new SignatureReader(signature).accept(methodSignatureVisitor);
         }
         if (exceptions != null) {
             for (String e : exceptions) {
                 ClassDefinition.current().addMethodException(getObjectType(e));
             }
         }
-        return methodDependencyVisitor;
+        return methodVisitor;
     }
 
     private static String getObjectType(String e) {
@@ -151,9 +148,9 @@ public class DependencyVisitor extends ClassVisitor {
         return getType(Type.getReturnType(desc));
     }
 
-    public static class MyAnnotationDependencyVisitor extends AnnotationVisitor {
-        public MyAnnotationDependencyVisitor() {
-            super(Opcodes.ASM5);
+    public static class InternalAnnotationVisitor extends AnnotationVisitor {
+        public InternalAnnotationVisitor() {
+            super(OPCODE_ASM5);
         }
 
         @Override
@@ -175,12 +172,12 @@ public class DependencyVisitor extends ClassVisitor {
         }
     }
 
-    public static class MyFieldDependencyVisitor extends FieldVisitor {
+    public static class InternalFieldVisitor extends FieldVisitor {
         @Inject
-        private MyAnnotationDependencyVisitor annotationDependencyVisitor;
+        private InternalAnnotationVisitor annotationDependencyVisitor;
 
-        public MyFieldDependencyVisitor() {
-            super(Opcodes.ASM5);
+        public InternalFieldVisitor() {
+            super(OPCODE_ASM5);
         }
 
         @Override
@@ -195,15 +192,15 @@ public class DependencyVisitor extends ClassVisitor {
         }
     }
 
-    public static class MyMethodDependencyVisitor extends MethodVisitor {
+    public static class InternalMethodVisitor extends MethodVisitor {
         @Inject
-        private MyAnnotationDependencyVisitor annotationDependencyVisitor;
+        private InternalAnnotationVisitor annotationDependencyVisitor;
 
         @Inject
-        private MyMethodLocalVariableSignatureDependencyVisitor methodLocalVariableSignatureDependencyVisitor;
+        private InternalMethodLocalVariableSignatureVisitor methodLocalVariableSignatureVisitor;
 
-        public MyMethodDependencyVisitor() {
-            super(Opcodes.ASM5);
+        public InternalMethodVisitor() {
+            super(OPCODE_ASM5);
         }
 
         @Override
@@ -262,7 +259,7 @@ public class DependencyVisitor extends ClassVisitor {
         public void visitLocalVariable(final String name, final String desc, final String signature, final Label start,
                 final Label end, final int index) {
             if (signature != null) {
-                new SignatureReader(signature).acceptType(methodLocalVariableSignatureDependencyVisitor);
+                new SignatureReader(signature).acceptType(methodLocalVariableSignatureVisitor);
             } else if (!name.equals("this")) {
                 ClassDefinition.current().addMethodLocalVariable(getSimpleType(desc));
             }
@@ -284,9 +281,9 @@ public class DependencyVisitor extends ClassVisitor {
         }
     }
 
-    public static class MyMethodLocalVariableSignatureDependencyVisitor extends SignatureVisitor {
-        public MyMethodLocalVariableSignatureDependencyVisitor() {
-            super(Opcodes.ASM5);
+    public static class InternalMethodLocalVariableSignatureVisitor extends SignatureVisitor {
+        public InternalMethodLocalVariableSignatureVisitor() {
+            super(OPCODE_ASM5);
         }
 
         @Override
@@ -307,9 +304,9 @@ public class DependencyVisitor extends ClassVisitor {
         }
     }
 
-    public static class MyFieldSignatureDependencyVisitor extends SignatureVisitor {
-        public MyFieldSignatureDependencyVisitor() {
-            super(Opcodes.ASM5);
+    public static class InternalFieldSignatureVisitor extends SignatureVisitor {
+        public InternalFieldSignatureVisitor() {
+            super(OPCODE_ASM5);
         }
 
         @Override
@@ -326,9 +323,9 @@ public class DependencyVisitor extends ClassVisitor {
         }
     }
 
-    public static class MyMethodSignatureDependencyVisitor extends SignatureVisitor {
-        public MyMethodSignatureDependencyVisitor() {
-            super(Opcodes.ASM5);
+    public static class InternalMethodSignatureVisitor extends SignatureVisitor {
+        public InternalMethodSignatureVisitor() {
+            super(OPCODE_ASM5);
         }
 
         @Override

@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 
@@ -22,28 +23,40 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-public class DependencyWriter {
+public class PlantUMLWriter {
 
     private Set<ClassDefinition> printedClassDefinitions = new HashSet<>();
-    private PrintWriter pw;
 
-    public DependencyWriter(PrintWriter pw) {
-        this.pw = pw;
-    }
+    private PrintWriter _pw;
+
+    @Inject
+    private Settings settings;
 
     private boolean isAllowed(String name) {
-        return name.startsWith("net.java.cargotracker.");
+        return name.startsWith(settings.getIncludes());
     }
 
-    public void writePlantuml(DependencyClassTreeNode root) {
-        pw.println("@startuml");
+    public void write(ClassTreeNode root) {
+        pw().println("@startuml");
         List<Class<?>> clazzes = filterUnwantedClasses(sortByName(filterAllowed(getAllDistinctDefinitions(root))));
         List<Package> packages = organizeIntoPackages(clazzes);
         for (Package packaze : packages) {
             writeDefinitions(packaze);
         }
         writeRelations(root, clazzes);
-        pw.println("@enduml");
+        pw().println("@enduml");
+        pw().close();
+    }
+
+    private PrintWriter pw() {
+        if (_pw == null) {
+            try {
+                _pw = new PrintWriter(settings.getOutputFilename());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return _pw;
     }
 
     private List<Class<?>> filterUnwantedClasses(List<ClassDefinition> classDefinitions) {
@@ -81,32 +94,28 @@ public class DependencyWriter {
         return list;
     }
 
-    private Set<ClassDefinition> getAllDistinctDefinitions(DependencyClassTreeNode node) {
+    private Set<ClassDefinition> getAllDistinctDefinitions(ClassTreeNode node) {
         Set<ClassDefinition> s = new HashSet<>();
-        getAllDistinctDefinitions(s, node);
+        s.add(node.getDefinition());
+        for (ClassTreeNode child : node.getChildren()) {
+            s.addAll(getAllDistinctDefinitions(child));
+        }
         return s;
     }
 
-    private void getAllDistinctDefinitions(Set<ClassDefinition> s, DependencyClassTreeNode node) {
-        s.add(node.getDefinition());
-        for (DependencyClassTreeNode child : node.getChildren()) {
-            getAllDistinctDefinitions(s, child);
-        }
-    }
-
-    private void writeRelations(DependencyClassTreeNode node, List<Class<?>> clazzes) {
+    private void writeRelations(ClassTreeNode node, List<Class<?>> clazzes) {
         if (!printedClassDefinitions.contains(node.getDefinition())) {
             printedClassDefinitions.add(node.getDefinition());
-            List<DependencyClassTreeNode> printedChildren = new ArrayList<>();
-            for (DependencyClassTreeNode child : node.getChildren()) {
+            List<ClassTreeNode> printedChildren = new ArrayList<>();
+            for (ClassTreeNode child : node.getChildren()) {
                 if (!node.getDefinition().equals(child.getDefinition())
                         && clazzes.contains(getClazz(child.getDefinition().getClassname()))) {
-                    pw.println(node.getDefinition().getSimpleClassname() + " --> "
+                    pw().println(node.getDefinition().getSimpleClassname() + " --> "
                             + child.getDefinition().getSimpleClassname());
                     printedChildren.add(child);
                 }
             }
-            for (DependencyClassTreeNode child : printedChildren) {
+            for (ClassTreeNode child : printedChildren) {
                 if (!node.getDefinition().equals(child.getDefinition())) {
                     writeRelations(child, clazzes);
                 }
@@ -194,14 +203,14 @@ public class DependencyWriter {
     }
 
     private void writeDefinitions(Package packaze, int indent) {
-        pw.println(getIndent(indent) + getPackageDefinition(packaze, indent == 0) + " {");
+        pw().println(getIndent(indent) + getPackageDefinition(packaze, indent == 0) + " {");
         for (Class<?> clazz : packaze.getClazzes()) {
-            pw.println(getIndent(indent + 1) + getClassDefinition(clazz));
+            pw().println(getIndent(indent + 1) + getClassDefinition(clazz));
         }
         for (Package childPackage : packaze.getPackages()) {
             writeDefinitions(childPackage, indent + 1);
         }
-        pw.println(getIndent(indent) + "}");
+        pw().println(getIndent(indent) + "}");
     }
 
     private String getPackageDefinition(Package packaze, boolean fullname) {
