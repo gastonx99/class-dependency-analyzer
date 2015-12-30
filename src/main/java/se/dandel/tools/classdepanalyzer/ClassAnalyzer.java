@@ -35,8 +35,8 @@ public class ClassAnalyzer {
 
     public void analyze() {
         ClassTreeNode root = tracker.track();
-        List<ClassDefinition> definitions = filterUnwantedClasses(
-                sortByName(filterAllowed(getAllDistinctDefinitions(root))));
+        List<ClassDefinition> definitions =
+                filterUnwantedClasses(sortByName(filterAllowed(getAllDistinctDefinitions(root))));
         List<ClassPackage> packages = organizeIntoPackages(definitions);
         writer.write(root, packages, definitions);
     }
@@ -142,8 +142,7 @@ public class ClassAnalyzer {
 
     private List<ClassDefinition> sortByName(Set<ClassDefinition> definitions) {
         List<ClassDefinition> list = new ArrayList<>(definitions);
-        list.sort(new Comparator<ClassDefinition>() {
-
+        Collections.sort(list, new Comparator<ClassDefinition>() {
             @Override
             public int compare(ClassDefinition o1, ClassDefinition o2) {
                 return o1.getClassname().compareTo(o2.getClassname());
