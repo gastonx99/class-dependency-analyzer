@@ -66,7 +66,7 @@ public class PlantUMLWriter {
 
     private void writeDefinitions(ClassPackage packaze, int indent) {
         pw().println(getIndent(indent) + getPackageDefinition(packaze, indent == 0) + " {");
-        for (ClassDefinition definition : packaze.getClazzes()) {
+        for (ClassDefinition definition : packaze.getDefinitions()) {
             pw().println(getIndent(indent + 1) + getClassDefinition(definition));
         }
         for (ClassPackage childPackage : packaze.getPackages()) {

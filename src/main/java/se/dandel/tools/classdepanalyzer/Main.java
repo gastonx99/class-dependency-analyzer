@@ -20,7 +20,6 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     private static Settings parseSettings(CommandLine cmd) {
@@ -33,12 +32,11 @@ public class Main {
 
     private static CommandLine parseOptions(final String[] args) throws ParseException {
         Options options = new Options();
-        options.addOption(Option.builder("classname").required().hasArg().desc("root classname to inspect").build());
-        options.addOption(Option.builder("includes").required().hasArg().desc("includes").build());
-        options.addOption(Option.builder("output").required().hasArg().desc("output filename").build());
+        options.addOption(Option.builder("classname").required().hasArg().desc("Root classname to inspect").build());
+        options.addOption(Option.builder("includes").required().hasArg().desc("Package names to include").build());
+        options.addOption(Option.builder("output").required().hasArg().desc("Output filename").build());
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
-        return cmd;
+        return parser.parse(options, args);
     }
 
 }

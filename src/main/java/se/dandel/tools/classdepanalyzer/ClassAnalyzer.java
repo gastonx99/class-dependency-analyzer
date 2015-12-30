@@ -35,18 +35,18 @@ public class ClassAnalyzer {
 
     public void analyze() {
         ClassTreeNode root = tracker.track();
-        List<ClassDefinition> clazzes = filterUnwantedClasses(
+        List<ClassDefinition> definitions = filterUnwantedClasses(
                 sortByName(filterAllowed(getAllDistinctDefinitions(root))));
-        List<ClassPackage> packages = organizeIntoPackages(clazzes);
-        writer.write(root, packages, clazzes);
+        List<ClassPackage> packages = organizeIntoPackages(definitions);
+        writer.write(root, packages, definitions);
     }
 
     private List<ClassPackage> organizeIntoPackages(List<ClassDefinition> list) {
         Map<String, ClassPackage> packages = new HashMap<String, ClassPackage>();
 
-        for (ClassDefinition clazz : list) {
-            ClassPackage packaze = getPackage(packages, clazz.getPackagename());
-            packaze.addClazz(clazz);
+        for (ClassDefinition definition : list) {
+            ClassPackage packaze = getPackage(packages, definition.getPackagename());
+            packaze.addDefinition(definition);
         }
 
         removePackagesWithOnlyOneChild(packages);
@@ -67,7 +67,7 @@ public class ClassAnalyzer {
         while (iterator.hasNext()) {
             Entry<String, ClassPackage> next = iterator.next();
             ClassPackage packaze = next.getValue();
-            if (packaze.getClazzes().isEmpty() && packaze.getPackages().size() <= 1) {
+            if (packaze.getDefinitions().isEmpty() && packaze.getPackages().size() <= 1) {
                 ClassPackage parent = packaze.getParent();
                 if (parent != null) {
                     parent.getPackages().remove(packaze);

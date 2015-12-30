@@ -20,19 +20,21 @@ public class ClassDefinition {
         current = new ClassDefinition(classname);
     }
 
-    private Class<?> clazz;
+    private Class<?> _clazz;
 
-    private ClassDefinition(String classname) {
+    public ClassDefinition(String classname) {
         this.classname = classname;
-        this.clazz = getClazz(classname);
     }
 
-    private Class<?> getClazz(String name) {
-        try {
-            return Class.forName(name);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("For name " + name, e);
+    private Class<?> getClazz() {
+        if (_clazz == null) {
+            try {
+                _clazz = Class.forName(classname);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("For name " + classname, e);
+            }
         }
+        return _clazz;
     }
 
     public static ClassDefinition current() {
@@ -170,35 +172,35 @@ public class ClassDefinition {
     }
 
     public boolean isEnum() {
-        return clazz.isEnum();
+        return getClazz().isEnum();
     }
 
     public boolean isEmbeddable() {
-        return clazz.isAnnotationPresent(Embeddable.class);
+        return getClazz().isAnnotationPresent(Embeddable.class);
     }
 
     public String getPackagename() {
-        return clazz.getPackage().getName();
+        return getClazz().getPackage().getName();
     }
 
     public boolean isInterface() {
-        return clazz.isInterface();
+        return getClazz().isInterface();
     }
 
     public boolean isAbstract() {
-        return Modifier.isAbstract(clazz.getModifiers());
+        return Modifier.isAbstract(getClazz().getModifiers());
     }
 
     public boolean isStateless() {
-        return clazz.isAnnotationPresent(Stateless.class);
+        return getClazz().isAnnotationPresent(Stateless.class);
     }
 
     public boolean isEntity() {
-        return clazz.isAnnotationPresent(Entity.class);
+        return getClazz().isAnnotationPresent(Entity.class);
     }
 
     public String getSimpleClassname() {
-        return clazz.getSimpleName();
+        return getClazz().getSimpleName();
     }
 
 }

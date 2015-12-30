@@ -10,7 +10,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 public class ClassPackage {
     private final String name;
     private ClassPackage parent;
-    private List<ClassDefinition> clazzes = new ArrayList<>();
+    private List<ClassDefinition> definitions = new ArrayList<>();
     private List<ClassPackage> packages = new ArrayList<>();
 
     public ClassPackage(String name) {
@@ -33,12 +33,12 @@ public class ClassPackage {
         packages.addAll(packaze);
     }
 
-    public void addClazz(ClassDefinition clazz) {
-        clazzes.add(clazz);
+    public void addDefinition(ClassDefinition definition) {
+        definitions.add(definition);
     }
 
-    public List<ClassDefinition> getClazzes() {
-        return clazzes;
+    public List<ClassDefinition> getDefinitions() {
+        return definitions;
     }
 
     public String getName() {
@@ -52,7 +52,7 @@ public class ClassPackage {
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE).append("name", name)
-                .append("parent", parent != null ? parent.getName() : "null").append("classes", clazzes).toString();
+                .append("parent", parent != null ? parent.getName() : "null").append("classes", definitions).toString();
     }
 
     @Override
