@@ -1,8 +1,13 @@
 package se.dandel.tools.classdepanalyzer;
 
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.ejb.Stateless;
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
@@ -15,8 +20,19 @@ public class ClassDefinition {
         current = new ClassDefinition(classname);
     }
 
+    private Class<?> clazz;
+
     private ClassDefinition(String classname) {
         this.classname = classname;
+        this.clazz = getClazz(classname);
+    }
+
+    private Class<?> getClazz(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("For name " + name, e);
+        }
     }
 
     public static ClassDefinition current() {
@@ -53,14 +69,6 @@ public class ClassDefinition {
 
     public String getClassname() {
         return classname;
-    }
-
-    public String getSimpleClassname() {
-        String s = classname.substring(classname.lastIndexOf(".") + 1);
-        if (s.contains("$")) {
-            s = s.substring(s.lastIndexOf("$") + 1);
-        }
-        return s;
     }
 
     public void setSuperClassname(String name) {
@@ -159,6 +167,38 @@ public class ClassDefinition {
 
     public Set<String> getAllClassnames() {
         return allClassnames;
+    }
+
+    public boolean isEnum() {
+        return clazz.isEnum();
+    }
+
+    public boolean isEmbeddable() {
+        return clazz.isAnnotationPresent(Embeddable.class);
+    }
+
+    public String getPackagename() {
+        return clazz.getPackage().getName();
+    }
+
+    public boolean isInterface() {
+        return clazz.isInterface();
+    }
+
+    public boolean isAbstract() {
+        return Modifier.isAbstract(clazz.getModifiers());
+    }
+
+    public boolean isStateless() {
+        return clazz.isAnnotationPresent(Stateless.class);
+    }
+
+    public boolean isEntity() {
+        return clazz.isAnnotationPresent(Entity.class);
+    }
+
+    public String getSimpleClassname() {
+        return clazz.getSimpleName();
     }
 
 }

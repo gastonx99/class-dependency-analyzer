@@ -1,16 +1,12 @@
 package se.dandel.tools.classdepanalyzer;
 
 import java.io.PrintWriter;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.ejb.Stateless;
 import javax.inject.Inject;
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -23,12 +19,12 @@ public class PlantUMLWriter {
     @Inject
     private Settings settings;
 
-    public void write(ClassTreeNode root, List<ClassPackage> packages, List<Class<?>> clazzes) {
+    public void write(ClassTreeNode root, List<ClassPackage> packages, List<ClassDefinition> definitions) {
         pw().println("@startuml");
         for (ClassPackage packaze : packages) {
             writeDefinitions(packaze);
         }
-        writeRelations(root, clazzes);
+        writeRelations(root, definitions);
         pw().println("@enduml");
         pw().close();
     }
@@ -44,13 +40,13 @@ public class PlantUMLWriter {
         return _pw;
     }
 
-    private void writeRelations(ClassTreeNode node, List<Class<?>> clazzes) {
+    private void writeRelations(ClassTreeNode node, List<ClassDefinition> definitions) {
         if (!printedClassDefinitions.contains(node.getDefinition())) {
             printedClassDefinitions.add(node.getDefinition());
             List<ClassTreeNode> printedChildren = new ArrayList<>();
             for (ClassTreeNode child : node.getChildren()) {
                 if (!node.getDefinition().equals(child.getDefinition())
-                        && clazzes.contains(getClazz(child.getDefinition().getClassname()))) {
+                        && definitions.contains(child.getDefinition())) {
                     pw().println(camelCasedClassname(node.getDefinition()) + " --> "
                             + camelCasedClassname(child.getDefinition()));
                     printedChildren.add(child);
@@ -58,17 +54,9 @@ public class PlantUMLWriter {
             }
             for (ClassTreeNode child : printedChildren) {
                 if (!node.getDefinition().equals(child.getDefinition())) {
-                    writeRelations(child, clazzes);
+                    writeRelations(child, definitions);
                 }
             }
-        }
-    }
-
-    private Class<?> getClazz(String name) {
-        try {
-            return Class.forName(name);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("For name " + name, e);
         }
     }
 
@@ -78,8 +66,8 @@ public class PlantUMLWriter {
 
     private void writeDefinitions(ClassPackage packaze, int indent) {
         pw().println(getIndent(indent) + getPackageDefinition(packaze, indent == 0) + " {");
-        for (Class<?> clazz : packaze.getClazzes()) {
-            pw().println(getIndent(indent + 1) + getClassDefinition(clazz));
+        for (ClassDefinition definition : packaze.getClazzes()) {
+            pw().println(getIndent(indent + 1) + getClassDefinition(definition));
         }
         for (ClassPackage childPackage : packaze.getPackages()) {
             writeDefinitions(childPackage, indent + 1);
@@ -92,11 +80,11 @@ public class PlantUMLWriter {
         return "package " + (fullname ? name : name.substring(name.lastIndexOf(".") + 1));
     }
 
-    private String getClassDefinition(Class<?> clazz) {
-        StringBuilder builder = new StringBuilder(getIdentifier(clazz));
-        builder.append(" \"" + clazz.getSimpleName() + "\"");
-        builder.append(" as " + camelCasedClassname(clazz));
-        String stereotype = getStereotype(clazz);
+    private String getClassDefinition(ClassDefinition definition) {
+        StringBuilder builder = new StringBuilder(getIdentifier(definition));
+        builder.append(" \"" + definition.getSimpleClassname() + "\"");
+        builder.append(" as " + camelCasedClassname(definition));
+        String stereotype = getStereotype(definition);
         if (StringUtils.isNotBlank(stereotype)) {
             builder.append(" << " + stereotype + " >>");
         }
@@ -105,10 +93,6 @@ public class PlantUMLWriter {
 
     private String camelCasedClassname(ClassDefinition definition) {
         return camelCasedClassname(definition.getClassname());
-    }
-
-    private String camelCasedClassname(Class<?> clazz) {
-        return camelCasedClassname(clazz.getName());
     }
 
     private String camelCasedClassname(String classname) {
@@ -124,39 +108,27 @@ public class PlantUMLWriter {
         return StringUtils.repeat("  ", null, indent);
     }
 
-    private String getStereotype(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(Stateless.class)) {
+    private String getStereotype(ClassDefinition definition) {
+        if (definition.isStateless()) {
             return "(B,pink) Stateless";
-        } else if (clazz.isAnnotationPresent(Entity.class)) {
+        } else if (definition.isEntity()) {
             return "(P,orange) Entity";
-        } else if (clazz.isAnnotationPresent(Embeddable.class)) {
+        } else if (definition.isEmbeddable()) {
             return "(P,orange) Embeddable";
         }
         return null;
     }
 
-    private String getIdentifier(Class<?> clazz) {
+    private String getIdentifier(ClassDefinition definition) {
         String identifier = "class";
-        if (isInterface(clazz)) {
+        if (definition.isInterface()) {
             identifier = "interface";
-        } else if (isAbstract(clazz)) {
+        } else if (definition.isAbstract()) {
             identifier = "abstract";
-        } else if (isEnum(clazz)) {
+        } else if (definition.isEnum()) {
             identifier = "enum";
         }
         return identifier;
-    }
-
-    private boolean isEnum(Class<?> clazz) {
-        return clazz.isEnum();
-    }
-
-    private boolean isInterface(Class<?> clazz) {
-        return clazz.isInterface();
-    }
-
-    private boolean isAbstract(Class<?> clazz) {
-        return Modifier.isAbstract(clazz.getModifiers());
     }
 
 }

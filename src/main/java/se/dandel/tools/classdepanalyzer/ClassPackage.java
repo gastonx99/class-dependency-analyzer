@@ -10,7 +10,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 public class ClassPackage {
     private final String name;
     private ClassPackage parent;
-    private List<Class<?>> clazzes = new ArrayList<>();
+    private List<ClassDefinition> clazzes = new ArrayList<>();
     private List<ClassPackage> packages = new ArrayList<>();
 
     public ClassPackage(String name) {
@@ -33,11 +33,11 @@ public class ClassPackage {
         packages.addAll(packaze);
     }
 
-    public void addClazz(Class<?> clazz) {
+    public void addClazz(ClassDefinition clazz) {
         clazzes.add(clazz);
     }
 
-    public List<Class<?>> getClazzes() {
+    public List<ClassDefinition> getClazzes() {
         return clazzes;
     }
 

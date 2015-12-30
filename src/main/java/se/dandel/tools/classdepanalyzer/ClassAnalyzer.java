@@ -13,7 +13,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.persistence.Embeddable;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -36,16 +35,17 @@ public class ClassAnalyzer {
 
     public void analyze() {
         ClassTreeNode root = tracker.track();
-        List<Class<?>> clazzes = filterUnwantedClasses(sortByName(filterAllowed(getAllDistinctDefinitions(root))));
+        List<ClassDefinition> clazzes = filterUnwantedClasses(
+                sortByName(filterAllowed(getAllDistinctDefinitions(root))));
         List<ClassPackage> packages = organizeIntoPackages(clazzes);
         writer.write(root, packages, clazzes);
     }
 
-    private List<ClassPackage> organizeIntoPackages(List<Class<?>> list) {
+    private List<ClassPackage> organizeIntoPackages(List<ClassDefinition> list) {
         Map<String, ClassPackage> packages = new HashMap<String, ClassPackage>();
 
-        for (Class<?> clazz : list) {
-            ClassPackage packaze = getPackage(packages, clazz.getPackage().getName());
+        for (ClassDefinition clazz : list) {
+            ClassPackage packaze = getPackage(packages, clazz.getPackagename());
             packaze.addClazz(clazz);
         }
 
@@ -114,25 +114,16 @@ public class ClassAnalyzer {
         return s;
     }
 
-    private List<Class<?>> filterUnwantedClasses(List<ClassDefinition> classDefinitions) {
-        List<Class<?>> list = new ArrayList<>();
+    private List<ClassDefinition> filterUnwantedClasses(List<ClassDefinition> classDefinitions) {
+        List<ClassDefinition> list = new ArrayList<>();
         for (ClassDefinition classDefinition : classDefinitions) {
-            Class<?> clazz = getClazz(classDefinition.getClassname());
-            boolean filter = clazz.isEnum();
-            filter |= clazz.isAnnotationPresent(Embeddable.class);
+            boolean filter = classDefinition.isEnum();
+            filter |= classDefinition.isEmbeddable();
             if (!filter) {
-                list.add(clazz);
+                list.add(classDefinition);
             }
         }
         return list;
-    }
-
-    private Class<?> getClazz(String name) {
-        try {
-            return Class.forName(name);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("For name " + name, e);
-        }
     }
 
     private boolean isAllowed(String name) {
