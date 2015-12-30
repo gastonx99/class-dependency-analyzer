@@ -110,8 +110,8 @@ public class PlantUMLWriter {
             for (ClassTreeNode child : node.getChildren()) {
                 if (!node.getDefinition().equals(child.getDefinition())
                         && clazzes.contains(getClazz(child.getDefinition().getClassname()))) {
-                    pw().println(node.getDefinition().getSimpleClassname() + " --> "
-                            + child.getDefinition().getSimpleClassname());
+                    pw().println(camelCasedClassname(node.getDefinition()) + " --> "
+                            + camelCasedClassname(child.getDefinition()));
                     printedChildren.add(child);
                 }
             }
@@ -220,10 +220,28 @@ public class PlantUMLWriter {
 
     private String getClassDefinition(Class<?> clazz) {
         StringBuilder builder = new StringBuilder(getIdentifier(clazz));
-        builder.append(" " + clazz.getSimpleName());
+        builder.append(" \"" + clazz.getSimpleName() + "\"");
+        builder.append(" as " + camelCasedClassname(clazz));
         String stereotype = getStereotype(clazz);
         if (StringUtils.isNotBlank(stereotype)) {
             builder.append(" << " + stereotype + " >>");
+        }
+        return builder.toString();
+    }
+
+    private String camelCasedClassname(ClassDefinition definition) {
+        return camelCasedClassname(definition.getClassname());
+    }
+
+    private String camelCasedClassname(Class<?> clazz) {
+        return camelCasedClassname(clazz.getName());
+    }
+
+    private String camelCasedClassname(String classname) {
+        StringBuilder builder = new StringBuilder();
+        String[] split = classname.split("\\.");
+        for (String str : split) {
+            builder.append(StringUtils.capitalize(str));
         }
         return builder.toString();
     }
