@@ -3,15 +3,8 @@ package se.dandel.tools.classdepanalyzer;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.ejb.Stateless;
@@ -20,8 +13,6 @@ import javax.persistence.Embeddable;
 import javax.persistence.Entity;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 
 public class PlantUMLWriter {
 
@@ -32,15 +23,9 @@ public class PlantUMLWriter {
     @Inject
     private Settings settings;
 
-    private boolean isAllowed(String name) {
-        return name.startsWith(settings.getIncludes());
-    }
-
-    public void write(ClassTreeNode root) {
+    public void write(ClassTreeNode root, List<ClassPackage> packages, List<Class<?>> clazzes) {
         pw().println("@startuml");
-        List<Class<?>> clazzes = filterUnwantedClasses(sortByName(filterAllowed(getAllDistinctDefinitions(root))));
-        List<Package> packages = organizeIntoPackages(clazzes);
-        for (Package packaze : packages) {
+        for (ClassPackage packaze : packages) {
             writeDefinitions(packaze);
         }
         writeRelations(root, clazzes);
@@ -57,50 +42,6 @@ public class PlantUMLWriter {
             }
         }
         return _pw;
-    }
-
-    private List<Class<?>> filterUnwantedClasses(List<ClassDefinition> classDefinitions) {
-        List<Class<?>> list = new ArrayList<>();
-        for (ClassDefinition classDefinition : classDefinitions) {
-            Class<?> clazz = getClazz(classDefinition.getClassname());
-            boolean filter = clazz.isEnum();
-            filter |= clazz.isAnnotationPresent(Embeddable.class);
-            if (!filter) {
-                list.add(clazz);
-            }
-        }
-        return list;
-    }
-
-    private Set<ClassDefinition> filterAllowed(Set<ClassDefinition> definitions) {
-        Set<ClassDefinition> set = new HashSet<>();
-        for (ClassDefinition classDefinition : definitions) {
-            if (isAllowed(classDefinition.getClassname())) {
-                set.add(classDefinition);
-            }
-        }
-        return set;
-    }
-
-    private List<ClassDefinition> sortByName(Set<ClassDefinition> definitions) {
-        List<ClassDefinition> list = new ArrayList<>(definitions);
-        list.sort(new Comparator<ClassDefinition>() {
-
-            @Override
-            public int compare(ClassDefinition o1, ClassDefinition o2) {
-                return o1.getClassname().compareTo(o2.getClassname());
-            }
-        });
-        return list;
-    }
-
-    private Set<ClassDefinition> getAllDistinctDefinitions(ClassTreeNode node) {
-        Set<ClassDefinition> s = new HashSet<>();
-        s.add(node.getDefinition());
-        for (ClassTreeNode child : node.getChildren()) {
-            s.addAll(getAllDistinctDefinitions(child));
-        }
-        return s;
     }
 
     private void writeRelations(ClassTreeNode node, List<Class<?>> clazzes) {
@@ -123,97 +64,30 @@ public class PlantUMLWriter {
         }
     }
 
-    public static class Package {
-        private final String name;
-        private Package parent;
-        private List<Class<?>> clazzes = new ArrayList<>();
-        private List<Package> packages = new ArrayList<>();
-
-        public Package(String name) {
-            this.name = name;
+    private Class<?> getClazz(String name) {
+        try {
+            return Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("For name " + name, e);
         }
-
-        public void setParent(Package parent) {
-            this.parent = parent;
-        }
-
-        public Package getParent() {
-            return parent;
-        }
-
-        public void addPackage(Package packaze) {
-            packages.add(packaze);
-        }
-
-        public void addPackages(Collection<Package> packaze) {
-            packages.addAll(packaze);
-        }
-
-        public void addClazz(Class<?> clazz) {
-            clazzes.add(clazz);
-        }
-
-        public List<Class<?>> getClazzes() {
-            return clazzes;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public List<Package> getPackages() {
-            return packages;
-        }
-
-        @Override
-        public String toString() {
-            return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE).append("name", name)
-                    .append("parent", parent != null ? parent.getName() : "null").append("classes", clazzes).toString();
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((name == null) ? 0 : name.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Package other = (Package) obj;
-            if (name == null) {
-                if (other.name != null)
-                    return false;
-            } else if (!name.equals(other.name))
-                return false;
-            return true;
-        }
-
     }
 
-    private void writeDefinitions(Package packaze) {
+    private void writeDefinitions(ClassPackage packaze) {
         writeDefinitions(packaze, 0);
     }
 
-    private void writeDefinitions(Package packaze, int indent) {
+    private void writeDefinitions(ClassPackage packaze, int indent) {
         pw().println(getIndent(indent) + getPackageDefinition(packaze, indent == 0) + " {");
         for (Class<?> clazz : packaze.getClazzes()) {
             pw().println(getIndent(indent + 1) + getClassDefinition(clazz));
         }
-        for (Package childPackage : packaze.getPackages()) {
+        for (ClassPackage childPackage : packaze.getPackages()) {
             writeDefinitions(childPackage, indent + 1);
         }
         pw().println(getIndent(indent) + "}");
     }
 
-    private String getPackageDefinition(Package packaze, boolean fullname) {
+    private String getPackageDefinition(ClassPackage packaze, boolean fullname) {
         String name = packaze.getName();
         return "package " + (fullname ? name : name.substring(name.lastIndexOf(".") + 1));
     }
@@ -250,70 +124,6 @@ public class PlantUMLWriter {
         return StringUtils.repeat("  ", null, indent);
     }
 
-    private List<Package> organizeIntoPackages(List<Class<?>> list) {
-        Map<String, Package> packages = new HashMap<String, Package>();
-
-        for (Class<?> clazz : list) {
-            Package packaze = getPackage(packages, clazz.getPackage().getName());
-            packaze.addClazz(clazz);
-        }
-
-        removePackagesWithOnlyOneChild(packages);
-
-        Set<Package> rootPackages = getRootPackages(packages.values());
-        List<Package> sortedRootPackages = new ArrayList<>(rootPackages);
-        Collections.sort(sortedRootPackages, new Comparator<Package>() {
-            @Override
-            public int compare(Package o1, Package o2) {
-                return o1.getName().compareTo(o2.getName());
-            }
-        });
-        return sortedRootPackages;
-    }
-
-    private void removePackagesWithOnlyOneChild(Map<String, Package> packages) {
-        Iterator<Entry<String, Package>> iterator = packages.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Entry<String, Package> next = iterator.next();
-            Package packaze = next.getValue();
-            if (packaze.getClazzes().isEmpty() && packaze.getPackages().size() <= 1) {
-                Package parent = packaze.getParent();
-                if (parent != null) {
-                    parent.getPackages().remove(packaze);
-                    parent.getPackages().addAll(packaze.getPackages());
-                }
-                for (Package childPackage : packaze.getPackages()) {
-                    childPackage.setParent(parent);
-                }
-                iterator.remove();
-            }
-        }
-    }
-
-    private Package getPackage(Map<String, Package> packages, String packagename) {
-        Package packaze = packages.get(packagename);
-        if (packaze == null) {
-            packaze = new Package(packagename);
-            if (packagename.contains(".")) {
-                Package parent = getPackage(packages, packagename.substring(0, packagename.lastIndexOf(".")));
-                packaze.setParent(parent);
-                parent.addPackage(packaze);
-            }
-            packages.put(packaze.getName(), packaze);
-        }
-        return packaze;
-    }
-
-    private Set<Package> getRootPackages(Collection<Package> collection) {
-        Set<Package> set = new HashSet<>();
-        for (Package packaze : collection) {
-            if (packaze.getParent() == null) {
-                set.add(packaze);
-            }
-        }
-        return set;
-    }
-
     private String getStereotype(Class<?> clazz) {
         if (clazz.isAnnotationPresent(Stateless.class)) {
             return "(B,pink) Stateless";
@@ -347,14 +157,6 @@ public class PlantUMLWriter {
 
     private boolean isAbstract(Class<?> clazz) {
         return Modifier.isAbstract(clazz.getModifiers());
-    }
-
-    private Class<?> getClazz(String name) {
-        try {
-            return Class.forName(name);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("For name " + name, e);
-        }
     }
 
 }
