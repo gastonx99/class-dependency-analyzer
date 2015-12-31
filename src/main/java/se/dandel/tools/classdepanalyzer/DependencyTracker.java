@@ -1,9 +1,11 @@
 package se.dandel.tools.classdepanalyzer;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.inject.Inject;
 
+import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.ClassReader;
 
 public class DependencyTracker {
@@ -19,7 +21,7 @@ public class DependencyTracker {
     }
 
     public ClassTreeNode track(ClassTreeNode parent, String classname) {
-        ClassDefinition.setup(classname);
+        ClassDefinition.setup(getClazz(classname));
         scan(classname);
         ClassTreeNode me = new ClassTreeNode(parent, ClassDefinition.current());
         if (!me.isCyclic()) {
@@ -32,15 +34,27 @@ public class DependencyTracker {
         return me;
     }
 
+    private Class<?> getClazz(String classname) {
+        try {
+            return settings.getTargetClassloader().loadClass(classname);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("For name " + classname, e);
+        }
+    }
+
     private boolean isAllowed(String name) {
         return name.startsWith(settings.getIncludes());
     }
 
     private void scan(String classname) {
+        InputStream is = null;
         try {
-            new ClassReader(classname).accept(visitor, 0);
+            is = settings.getTargetClassloader().getResourceAsStream(classname.replace('.', '/') + ".class");
+            new ClassReader(is).accept(visitor, 0);
         } catch (IOException e) {
             throw new RuntimeException("For " + classname, e);
+        } finally {
+            IOUtils.closeQuietly(is);
         }
     }
 }
