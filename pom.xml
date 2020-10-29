@@ -16,12 +16,12 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.4</version>
+			<version>2.8.0</version>
 		</dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.4</version>
+            <version>3.11</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -33,13 +33,13 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
             <artifactId>commons-cli</artifactId>
-            <version>1.3.1</version>
+            <version>1.4</version>
         </dependency>
         <dependency>
             <groupId>net.sourceforge.plantuml</groupId>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-            <version>2.4</version>
+            <version>2.10.8</version>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
